@@ -1,0 +1,23 @@
+{
+  "name": "playwright-ai-toolkit",
+  "version": "0.1.0",
+  "description": "MVPs de IA aplicada a testing con Playwright: triage automático de fallos en CI, self-healing de selectors, y generación de tests desde user stories.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "triage": "tsx src/triage/triageFailures.ts",
+    "generate-test": "tsx src/generation/generateTest.ts",
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,40 @@
+name: Playwright tests + AI triage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Correr tests
+        run: npx playwright test --reporter=json > test-results/results.json
+        continue-on-error: true # queremos que el triage corra incluso si hay fallos
+
+      - name: Triage automático de fallos con IA
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npm run triage -- test-results/results.json
+
+      - name: Subir reporte de triage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: triage-report
+          path: triage-report.md

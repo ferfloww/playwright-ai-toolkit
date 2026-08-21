@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+test-results/
+playwright-report/
+playwright/.cache/
+triage-report.md
+healing-log.json
+*.log

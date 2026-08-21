@@ -1,0 +1,70 @@
+{
+  "suites": [
+    {
+      "file": "tests/checkout.spec.ts",
+      "specs": [
+        {
+          "title": "el usuario puede completar el checkout con tarjeta válida",
+          "tests": [
+            {
+              "results": [
+                {
+                  "status": "failed",
+                  "error": {
+                    "message": "Timeout 5000ms exceeded while waiting for locator('#pay-button') to be visible",
+                    "stack": "Error: Timeout 5000ms exceeded\n    at checkout.spec.ts:34:10"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "el total refleja el descuento aplicado por cupón",
+          "tests": [
+            {
+              "results": [
+                {
+                  "status": "failed",
+                  "error": {
+                    "message": "expect(received).toBe(expected)\nExpected: \"45.00\"\nReceived: \"50.00\"",
+                    "stack": "Error: expect(received).toBe(expected)\n    at checkout.spec.ts:61:22"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/search.spec.ts",
+      "specs": [
+        {
+          "title": "el buscador muestra resultados relevantes",
+          "tests": [
+            {
+              "results": [
+                {
+                  "status": "failed",
+                  "error": {
+                    "message": "locator.click: Error: strict mode violation: locator('.search-result') resolved to 0 elements",
+                    "stack": "Error: locator.click\n    at search.spec.ts:22:5"
+                  },
+                  "retries": 0
+                },
+                {
+                  "status": "failed",
+                  "error": {
+                    "message": "locator.click: Error: strict mode violation: locator('.search-result') resolved to 0 elements",
+                    "stack": "Error: locator.click\n    at search.spec.ts:22:5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
