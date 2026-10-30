@@ -1,7 +1,7 @@
 {
   "name": "playwright-ai-toolkit",
   "version": "0.1.0",
-  "description": "MVPs de IA aplicada a testing con Playwright: triage automático de fallos en CI, self-healing de selectors, y generación de tests desde user stories.",
+  "description": "AI-powered MVPs for Playwright testing: automated CI failure triage, self-healing selectors, and test generation from user stories.",
   "license": "MIT",
   "type": "module",
   "scripts": {

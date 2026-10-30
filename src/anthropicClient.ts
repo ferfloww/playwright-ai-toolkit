@@ -1,16 +1,16 @@
 import "dotenv/config";
 
 /**
- * Cliente compartido para las tres herramientas del toolkit, usando un modelo
- * local vía Ollama en vez de la API paga de Anthropic.
- * Requiere `ollama serve` corriendo y el modelo descargado (`ollama pull <modelo>`).
+ * Shared client for the toolkit's three tools, using a local model via
+ * Ollama instead of the paid Anthropic API.
+ * Requires `ollama serve` running and the model pulled (`ollama pull <model>`).
  */
 const OLLAMA_HOST = process.env.OLLAMA_HOST ?? "http://localhost:11434";
 export const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? "llama3.1";
 
 /**
- * Extrae el primer bloque JSON (array u objeto) de un texto, por si el modelo
- * local añade explicación o fences de markdown alrededor.
+ * Extracts the first JSON block (array or object) from a string, in case the
+ * local model wraps it in explanations or markdown fences.
  */
 function extractJsonBlock(raw: string): string {
   const cleaned = raw.replace(/```json|```/g, "").trim();
@@ -22,9 +22,9 @@ function extractJsonBlock(raw: string): string {
 }
 
 /**
- * Helper para pedirle al modelo local una respuesta que sea JSON puro y parsearla.
- * No usa el modo `format: "json"` de Ollama porque este fuerza un objeto top-level
- * y rompe los prompts que piden un array.
+ * Helper that asks the local model for a pure JSON response and parses it.
+ * It doesn't use Ollama's `format: "json"` mode because that forces a
+ * top-level object and breaks prompts that ask for an array.
  */
 export async function askForJson<T>(prompt: string, maxTokens = 2000): Promise<T> {
   const response = await fetch(`${OLLAMA_HOST}/api/chat`, {
@@ -40,7 +40,7 @@ export async function askForJson<T>(prompt: string, maxTokens = 2000): Promise<T
 
   if (!response.ok) {
     throw new Error(
-      `Ollama respondió ${response.status}. ¿Está corriendo \`ollama serve\` y descargado el modelo "${DEFAULT_MODEL}"?`
+      `Ollama responded ${response.status}. Is \`ollama serve\` running and the model "${DEFAULT_MODEL}" pulled?`
     );
   }
 
@@ -51,13 +51,13 @@ export async function askForJson<T>(prompt: string, maxTokens = 2000): Promise<T
     return JSON.parse(extractJsonBlock(raw)) as T;
   } catch (err) {
     throw new Error(
-      `No se pudo parsear la respuesta del modelo local como JSON.\nRespuesta cruda:\n${raw}`
+      `Could not parse the local model's response as JSON.\nRaw response:\n${raw}`
     );
   }
 }
 
 /**
- * Helper para pedirle al modelo local texto libre (ej. código), sin forzar JSON.
+ * Helper that asks the local model for free-form text (e.g. code), without forcing JSON.
  */
 export async function askForText(
   prompt: string,
@@ -81,7 +81,7 @@ export async function askForText(
 
   if (!response.ok) {
     throw new Error(
-      `Ollama respondió ${response.status}. ¿Está corriendo \`ollama serve\` y descargado el modelo "${DEFAULT_MODEL}"?`
+      `Ollama responded ${response.status}. Is \`ollama serve\` running and the model "${DEFAULT_MODEL}" pulled?`
     );
   }
 

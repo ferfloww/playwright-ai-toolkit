@@ -1,95 +1,100 @@
 # Playwright AI Toolkit
 
-Tres herramientas MVP que aplican IA (Claude) a problemas reales de testing automatizado con [Playwright](https://playwright.dev/): triage de fallos en CI, self-healing de selectors, y generación de tests desde user stories.
+Three MVP tools that apply AI (a local LLM via [Ollama](https://ollama.com)) to real automated-testing problems with [Playwright](https://playwright.dev/): CI failure triage, self-healing selectors, and test generation from user stories.
 
-No son un framework completo — son puntos de partida honestos, pensados para extenderse en un proyecto real. Cada uno resuelve un problema concreto del día a día de QA/SDET.
+They're not a complete framework — they're honest starting points, meant to be extended in a real project. Each one solves a concrete, everyday QA/SDET problem.
 
-## ¿Por qué existe esto?
+## Why does this exist?
 
-En CI, los tests fallan por razones muy distintas (bug real, flakiness, UI que cambió, entorno caído) y alguien tiene que abrir cada uno para saber cuál es cuál. Estas tres herramientas usan un LLM para reducir ese trabajo manual, siempre dejando la decisión final a un humano — ninguna de las tres modifica código de producción ni de tests de forma automática y silenciosa.
+In CI, tests fail for very different reasons (a real bug, flakiness, a UI change, a broken environment) and someone has to open each one to figure out which is which. These three tools use an LLM to cut down that manual work, always leaving the final decision to a human — none of them modifies production or test code automatically and silently.
 
-## Instalación
+## Installation
 
 ```bash
-git clone <tu-fork-de-este-repo>
+git clone https://github.com/ferfloww/playwright-ai-toolkit.git
 cd playwright-ai-toolkit
 npm install
 npx playwright install chromium
 cp .env.example .env
-# Edita .env y pon tu ANTHROPIC_API_KEY (https://console.anthropic.com/settings/keys)
+
+# Install Ollama (https://ollama.com), then:
+ollama pull llama3.1
+ollama serve
 ```
 
-## 1. Triage automático de fallos (`src/triage`)
+`OLLAMA_HOST` and `OLLAMA_MODEL` in `.env` are optional; they default to `http://localhost:11434` and `llama3.1`.
 
-Lee el reporte JSON de Playwright y clasifica cada fallo en `flaky`, `real_bug`, `broken_selector` o `environment_issue`, con razonamiento y acción sugerida. Genera `triage-report.md`.
+## 1. Automated failure triage (`src/triage`)
+
+Reads Playwright's JSON report and classifies each failure as `flaky`, `real_bug`, `broken_selector`, or `environment_issue`, with reasoning and a suggested action. Produces `triage-report.md`.
 
 ```bash
-# Genera un reporte real de tu suite:
+# Generate a real report from your suite:
 npx playwright test --reporter=json > test-results/results.json
 npm run triage -- test-results/results.json
 
-# O prueba con el ejemplo incluido:
+# Or try it with the included example:
 npm run triage -- examples/sample-results.json
 ```
 
-Pensado para correr como último paso del pipeline de CI (ver `.github/workflows/ci.yml`): en vez de que alguien abra 40 tests fallidos uno por uno, el reporte llega ya priorizado, con los bugs reales primero.
+Designed to run as the last step of a CI pipeline (see `.github/workflows/ci.yml`): instead of someone opening 40 failed tests one by one, the report arrives already prioritized, with real bugs first.
 
 ## 2. Self-healing selectors (`src/healing`)
 
-`healingLocator(page, selector, description)` intenta el selector normal primero. Si falla, le manda a Claude el HTML actual de la página + una descripción en lenguaje natural del elemento, y usa el selector que sugiera **solo para esa ejecución** — nunca reescribe tu código automáticamente.
+`healingLocator(page, selector, description)` tries the normal selector first. If it fails, it sends the model the page's current HTML plus a natural-language description of the element, and uses the suggested selector **only for that run** — it never rewrites your code automatically.
 
-Cada intento de healing (haya funcionado o no) queda registrado en `healing-log.json`, para que el equipo revise y decida si actualizar el selector real en el código fuente.
+Every healing attempt (successful or not) is recorded in `healing-log.json`, so the team can review it and decide whether to update the real selector in the source code.
 
 ```ts
 import { healingLocator } from "./src/healing/healingLocator.js";
 
 const button = await healingLocator(
   page,
-  "#submit-btn", // selector que se rompió
-  "el botón para enviar el formulario de login" // descripción para la IA
+  "#submit-btn", // the selector that broke
+  "the button that submits the login form" // description for the AI
 );
 await button.click();
 ```
 
-Test de demostración (contra una página de práctica pública):
+Demo test (against a public practice page):
 
 ```bash
 npm test -- example.spec.ts
 ```
 
-**Por qué no hace auto-fix silencioso:** un selector que "ya no encuentra nada" a veces es la señal correcta de un bug real (ej. un botón que desapareció por error). Auto-reparar sin dejar rastro escondería justo el tipo de regresión que el test debía atrapar.
+**Why no silent auto-fix:** a selector that "no longer finds anything" is sometimes the correct signal of a real bug (e.g. a button that disappeared by mistake). Auto-repairing without leaving a trace would hide exactly the kind of regression the test was supposed to catch.
 
-## 3. Generación de tests desde user stories (`src/generation`)
+## 3. Test generation from user stories (`src/generation`)
 
-Toma una user story en markdown y genera un borrador de `.spec.ts` siguiendo Page Object Model, con casos happy path + edge case, y TODOs explícitos donde los selectors son placeholders (el generador no conoce el DOM real de tu app).
+Takes a user story in markdown and generates a draft `.spec.ts` following Page Object Model, with happy path + edge cases, and explicit TODOs where selectors are placeholders (the generator doesn't know your app's real DOM).
 
 ```bash
 npm run generate-test -- examples/sample-user-story.md
-# -> genera tests/generated/sample-user-story.spec.ts
+# -> generates tests/generated/sample-user-story.spec.ts
 ```
 
-Resuelve el "blank page problem": partir de una estructura completa en vez de un archivo vacío. El output SIEMPRE debe revisarse antes de correrse o commitearse.
+It solves the "blank page problem": starting from a complete structure instead of an empty file. The output must ALWAYS be reviewed before running or committing it.
 
-## Estructura del repo
+## Repo structure
 
 ```
 src/
-  anthropicClient.ts     # cliente compartido del SDK de Anthropic
-  triage/                # módulo 1
-  healing/                # módulo 2
-  generation/              # módulo 3
-examples/                 # inputs de ejemplo para probar cada módulo
-tests/                    # tests Playwright reales, incluye demo de healing
-.github/workflows/ci.yml  # pipeline de ejemplo con triage automático
+  anthropicClient.ts      # shared LLM client (Ollama)
+  triage/                 # module 1
+  healing/                # module 2
+  generation/             # module 3
+examples/                 # sample inputs to try each module
+tests/                    # real Playwright tests, including the healing demo
+.github/workflows/ci.yml  # example pipeline with automated triage
 ```
 
-## Limitaciones honestas (léelo antes de usarlo en producción)
+## Honest limitations (read before using in production)
 
-- El triage y el healing dependen de la calidad del HTML/errores que reciben — en apps muy dinámicas (SPAs con mucho estado en memoria) la precisión baja.
-- La generación de tests produce selectors placeholder, no selectors reales — siempre necesita revisión humana.
-- Cada llamada consume tokens de la API de Anthropic; en una suite grande, considera batchear (el módulo de triage ya lo hace) para controlar costo.
-- Esto es un punto de partida, no una librería mantenida con versionado semántico ni tests exhaustivos de sí misma.
+- Triage and healing depend on the quality of the HTML/errors they receive — in very dynamic apps (SPAs with lots of in-memory state) accuracy drops.
+- Test generation produces placeholder selectors, not real ones — it always needs human review.
+- Output quality depends on the local model you choose; small models may return malformed JSON or weaker suggestions. On a large suite, batching (which the triage module already does) keeps calls manageable.
+- This is a starting point, not a maintained library with semantic versioning or exhaustive tests of its own.
 
-## Licencia
+## License
 
-MIT — úsalo, modifícalo, adáptalo a tu stack.
+MIT — use it, modify it, adapt it to your stack.

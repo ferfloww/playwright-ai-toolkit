@@ -4,7 +4,7 @@
       "file": "tests/checkout.spec.ts",
       "specs": [
         {
-          "title": "el usuario puede completar el checkout con tarjeta válida",
+          "title": "user can complete checkout with a valid card",
           "tests": [
             {
               "results": [
@@ -20,7 +20,7 @@
           ]
         },
         {
-          "title": "el total refleja el descuento aplicado por cupón",
+          "title": "total reflects the coupon discount",
           "tests": [
             {
               "results": [
@@ -41,7 +41,7 @@
       "file": "tests/search.spec.ts",
       "specs": [
         {
-          "title": "el buscador muestra resultados relevantes",
+          "title": "search shows relevant results",
           "tests": [
             {
               "results": [

@@ -3,33 +3,33 @@ import path from "node:path";
 import { askForText } from "../anthropicClient.js";
 
 /**
- * Uso:
+ * Usage:
  *   npm run generate-test -- examples/sample-user-story.md
  *
- * Lee una user story en markdown/texto plano y genera un archivo
- * `.spec.ts` de Playwright siguiendo convenciones de Page Object Model,
- * en tests/generated/. El archivo se genera SIEMPRE como borrador para
- * revisión humana — nunca se corre ni se commitea automáticamente.
+ * Reads a user story in markdown/plain text and generates a Playwright
+ * `.spec.ts` file following Page Object Model conventions, in
+ * tests/generated/. The file is ALWAYS generated as a draft for human
+ * review — it is never run or committed automatically.
  *
- * Esto es un MVP deliberadamente simple: no conoce el DOM real de tu app,
- * así que los selectors que genera son placeholders con TODOs explícitos.
- * El valor está en ahorrar el "blank page problem": partir de una
- * estructura completa (arrange/act/assert, nombres de test descriptivos,
- * casos edge) en vez de un archivo vacío.
+ * This is a deliberately simple MVP: it doesn't know your app's real DOM,
+ * so the selectors it generates are placeholders with explicit TODOs.
+ * The value is in solving the "blank page problem": starting from a
+ * complete structure (arrange/act/assert, descriptive test names, edge
+ * cases) instead of an empty file.
  */
 
-const SYSTEM_CONVENTIONS = `Genera SIEMPRE tests de Playwright en TypeScript siguiendo estas convenciones:
-- Usa @playwright/test (import { test, expect } from "@playwright/test").
-- Usa Page Object Model: si la story lo justifica, define una clase Page Object simple con métodos de acción.
-- Nombra los tests describiendo el comportamiento esperado, no la implementación.
-- Cubre el happy path Y al menos un caso edge o de error si la story lo sugiere.
-- Marca cada selector con un comentario "// TODO: verificar selector real" ya que no conoces el DOM real de la app.
-- No inventes URLs reales; usa una constante BASE_URL al inicio con un placeholder.
-- Comentarios de código en español, nombres de variables/funciones en inglés (convención del equipo).`;
+const SYSTEM_CONVENTIONS = `ALWAYS generate Playwright tests in TypeScript following these conventions:
+- Use @playwright/test (import { test, expect } from "@playwright/test").
+- Use Page Object Model: if the story warrants it, define a simple Page Object class with action methods.
+- Name tests after the expected behavior, not the implementation.
+- Cover the happy path AND at least one edge or error case if the story suggests it.
+- Mark each selector with a "// TODO: verify real selector" comment, since you don't know the app's real DOM.
+- Don't invent real URLs; use a BASE_URL constant at the top with a placeholder.
+- Write code comments and variable/function names in English.`;
 
 async function generateFromStory(storyText: string): Promise<string> {
   const code = await askForText(
-    `Genera un archivo de test Playwright (.spec.ts) completo para esta user story:\n\n${storyText}\n\nDevuelve SOLO el código TypeScript, sin explicación adicional y sin fences de markdown.`,
+    `Generate a complete Playwright test file (.spec.ts) for this user story:\n\n${storyText}\n\nReturn ONLY the TypeScript code, with no extra explanation and no markdown fences.`,
     SYSTEM_CONVENTIONS
   );
   return code.replace(/^```(typescript|ts)?\n?|```$/gm, "").trim();
@@ -38,12 +38,12 @@ async function generateFromStory(storyText: string): Promise<string> {
 async function main() {
   const storyPath = process.argv[2];
   if (!storyPath) {
-    console.error("Uso: npm run generate-test -- <ruta-a-user-story.md>");
+    console.error("Usage: npm run generate-test -- <path-to-user-story.md>");
     process.exit(1);
   }
 
   const storyText = readFileSync(storyPath, "utf-8");
-  console.log(`Generando test a partir de: ${storyPath}...`);
+  console.log(`Generating test from: ${storyPath}...`);
 
   const code = await generateFromStory(storyText);
 
@@ -54,11 +54,11 @@ async function main() {
   const outPath = path.join(outDir, `${baseName}.spec.ts`);
   writeFileSync(outPath, code + "\n", "utf-8");
 
-  console.log(`\nBorrador generado en: ${outPath}`);
-  console.log("Revísalo antes de correrlo: los selectors son placeholders (ver TODOs).");
+  console.log(`\nDraft generated at: ${outPath}`);
+  console.log("Review it before running: selectors are placeholders (see TODOs).");
 }
 
 main().catch((err) => {
-  console.error("Error generando el test:", err);
+  console.error("Error generating the test:", err);
   process.exit(1);
 });

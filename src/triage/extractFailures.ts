@@ -3,11 +3,11 @@ import type { PlaywrightJsonFailure } from "./types.js";
 
 /**
  * Playwright's built-in JSON reporter (`--reporter=json`) produces a tree of
- * suites -> specs -> tests -> results. Esta función recorre ese árbol y
- * extrae solo los tests que terminaron en estado "failed" o "timedOut",
- * junto con su mensaje de error, para mandarlos a triage.
+ * suites -> specs -> tests -> results. This function walks that tree and
+ * extracts only the tests that ended in "failed" or "timedOut" status,
+ * along with their error message, to send them to triage.
  *
- * Genera el archivo de entrada con:
+ * Generate the input file with:
  *   npx playwright test --reporter=json > examples/sample-results.json
  */
 export function extractFailures(jsonReportPath: string): PlaywrightJsonFailure[] {
@@ -24,7 +24,7 @@ export function extractFailures(jsonReportPath: string): PlaywrightJsonFailure[]
           failures.push({
             testTitle: spec.title,
             filePath: filePath || spec.file || "unknown",
-            errorMessage: lastResult.error?.message ?? "Sin mensaje de error capturado",
+            errorMessage: lastResult.error?.message ?? "No error message captured",
             errorStack: lastResult.error?.stack,
             retries: test.results.length - 1,
           });

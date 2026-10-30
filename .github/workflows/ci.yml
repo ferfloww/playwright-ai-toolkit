@@ -16,23 +16,23 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: npm ci
 
-      - name: Instalar navegadores de Playwright
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Correr tests
+      - name: Run tests
         run: npx playwright test --reporter=json > test-results/results.json
-        continue-on-error: true # queremos que el triage corra incluso si hay fallos
+        continue-on-error: true # we want triage to run even if tests fail
 
-      - name: Triage automático de fallos con IA
+      - name: AI failure triage
         if: always()
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: npm run triage -- test-results/results.json
 
-      - name: Subir reporte de triage
+      - name: Upload triage report
         if: always()
         uses: actions/upload-artifact@v4
         with:

@@ -3,21 +3,20 @@ import type { Page, Locator } from "@playwright/test";
 import { askForJson } from "../anthropicClient.js";
 
 /**
- * MVP de "self-healing selectors".
+ * "Self-healing selectors" MVP.
  *
- * Filosofía deliberada: esta herramienta NO reemplaza el selector en el
- * código de forma silenciosa (eso es peligroso — puede ocultar regresiones
- * reales de la app). En su lugar:
- *   1. Intenta el selector primario normal.
- *   2. Si falla, le pasa a Claude el HTML actual de la página + una
- *      descripción en lenguaje natural del elemento buscado.
- *   3. Si Claude propone un selector que SÍ resuelve en la página, lo usa
- *      para que el test pueda continuar en esta ejecución...
- *   4. ...pero deja constancia en healing-log.json para que un humano
- *      decida si actualizar el selector en el código fuente.
+ * Deliberate philosophy: this tool does NOT silently replace the selector in
+ * your code (that's dangerous — it can hide real app regressions). Instead:
+ *   1. It tries the normal primary selector.
+ *   2. If that fails, it sends the AI model the page's current HTML plus a
+ *      natural-language description of the target element.
+ *   3. If the model proposes a selector that DOES resolve on the page, it
+ *      uses it so the test can continue in this run...
+ *   4. ...but records it in healing-log.json so a human can decide whether
+ *      to update the selector in the source code.
  *
- * Así el test no se cae por un cambio cosmético de UI, pero el equipo se
- * entera y mantiene control sobre el código real.
+ * This way the test doesn't break on a cosmetic UI change, but the team
+ * finds out and stays in control of the real code.
  */
 
 interface HealingLogEntry {
@@ -48,29 +47,29 @@ function logHealingEvent(entry: HealingLogEntry) {
 }
 
 async function suggestSelector(page: Page, description: string): Promise<HealingSuggestion> {
-  // Recortamos el HTML para no gastar de más en tokens: body completo suele
-  // bastar y evita mandar <head>/scripts/estilos irrelevantes.
+  // Trim the HTML to avoid wasting tokens: the body is usually enough and
+  // avoids sending irrelevant <head>/scripts/styles.
   const html = await page.evaluate(() => document.body.innerHTML);
-  const trimmedHtml = html.length > 12000 ? html.slice(0, 12000) + "...[truncado]" : html;
+  const trimmedHtml = html.length > 12000 ? html.slice(0, 12000) + "...[truncated]" : html;
 
-  const prompt = `Eres un experto en testing web con Playwright.
-Un test buscaba un elemento descrito como: "${description}"
-El selector original ya NO funciona (probablemente cambió la UI).
+  const prompt = `You are an expert in web testing with Playwright.
+A test was looking for an element described as: "${description}"
+The original selector NO LONGER works (the UI probably changed).
 
-Aquí está el HTML actual del <body> de la página:
+Here is the current HTML of the page's <body>:
 \`\`\`html
 ${trimmedHtml}
 \`\`\`
 
-Propón el MEJOR selector CSS o de texto (formato Playwright, ej: "button:has-text('Enviar')" o "#submit-btn") que identifique el elemento descrito.
-Responde SOLO con JSON (sin markdown): { "selector": string, "reasoning": string }`;
+Propose the BEST CSS or text selector (Playwright format, e.g. "button:has-text('Submit')" or "#submit-btn") that identifies the described element.
+Respond ONLY with JSON (no markdown): { "selector": string, "reasoning": string }`;
 
   return askForJson<HealingSuggestion>(prompt, 500);
 }
 
 /**
- * Devuelve un Locator utilizable: el original si funciona, o uno "sanado"
- * por IA si el original no resuelve a tiempo. Lanza si ninguno funciona.
+ * Returns a usable Locator: the original one if it works, or an AI-"healed"
+ * one if the original doesn't resolve in time. Throws if neither works.
  */
 export async function healingLocator(
   page: Page,
@@ -85,7 +84,7 @@ export async function healingLocator(
     return primary;
   } catch {
     console.warn(
-      `[healing] Selector original no encontrado: "${originalSelector}". Pidiendo sugerencia a Claude...`
+      `[healing] Original selector not found: "${originalSelector}". Asking the AI model for a suggestion...`
     );
   }
 
@@ -97,10 +96,10 @@ export async function healingLocator(
     await healed.waitFor({ state: "attached", timeout: timeoutMs });
     succeeded = true;
     console.warn(
-      `[healing] Selector sanado funcionó: "${suggestion.selector}" (${suggestion.reasoning})`
+      `[healing] Healed selector worked: "${suggestion.selector}" (${suggestion.reasoning})`
     );
   } catch {
-    console.error(`[healing] El selector sugerido tampoco funcionó: "${suggestion.selector}"`);
+    console.error(`[healing] The suggested selector didn't work either: "${suggestion.selector}"`);
   }
 
   logHealingEvent({
@@ -113,7 +112,7 @@ export async function healingLocator(
 
   if (!succeeded) {
     throw new Error(
-      `No se encontró el elemento "${description}" ni con el selector original ni con el sugerido por IA.`
+      `Element "${description}" not found with either the original or the AI-suggested selector.`
     );
   }
 
