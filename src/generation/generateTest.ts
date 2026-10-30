@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { anthropic, DEFAULT_MODEL } from "../anthropicClient.js";
+import { askForText } from "../anthropicClient.js";
 
 /**
  * Uso:
@@ -28,20 +28,10 @@ const SYSTEM_CONVENTIONS = `Genera SIEMPRE tests de Playwright en TypeScript sig
 - Comentarios de código en español, nombres de variables/funciones en inglés (convención del equipo).`;
 
 async function generateFromStory(storyText: string): Promise<string> {
-  const response = await anthropic.messages.create({
-    model: DEFAULT_MODEL,
-    max_tokens: 2500,
-    system: SYSTEM_CONVENTIONS,
-    messages: [
-      {
-        role: "user",
-        content: `Genera un archivo de test Playwright (.spec.ts) completo para esta user story:\n\n${storyText}\n\nDevuelve SOLO el código TypeScript, sin explicación adicional y sin fences de markdown.`,
-      },
-    ],
-  });
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  const code = textBlock && "text" in textBlock ? textBlock.text : "";
+  const code = await askForText(
+    `Genera un archivo de test Playwright (.spec.ts) completo para esta user story:\n\n${storyText}\n\nDevuelve SOLO el código TypeScript, sin explicación adicional y sin fences de markdown.`,
+    SYSTEM_CONVENTIONS
+  );
   return code.replace(/^```(typescript|ts)?\n?|```$/gm, "").trim();
 }
 
